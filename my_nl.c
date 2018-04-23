@@ -25,10 +25,12 @@
 
 #include "lib/inttypes.in.h"
 #include <inttypes.h>
+#include <stdlib.h>		/* для EXIT_SUCCESS и EXIT_FAILURE */
+/* #include "lib/gettext.h" */
 
 /* #include "system.h" */
 
-#include <regex.h>
+#include "lib/regex.h"
 
 /* #include "error.h" */
 /* #include "fadvise.h" */
@@ -38,6 +40,7 @@
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "nl"
+# define LC_MESSAGES 1729
 
 #define AUTHORS \
 	proper_name ("Scott Bartram"), \
@@ -45,14 +48,15 @@ proper_name ("David MacKenzie")
 
 /* --------------------------------- */
 
+extern char *program_name;
+
 typedef enum {false, true} bool;
 
+#define HELP_OPTION_DESCRIPTION \
+  _("      --help     display this help and exit\n")
+#define VERSION_OPTION_DESCRIPTION \
+  _("      --version  output version information and exit\n")
 
-enum
-{
-  GETOPT_HELP_CHAR = (CHAR_MIN - 2),
-  GETOPT_VERSION_CHAR = (CHAR_MIN - 3)
-};
 
 #define GETOPT_HELP_OPTION_DECL \
   "help", no_argument, NULL, GETOPT_HELP_CHAR
@@ -60,6 +64,53 @@ enum
   "version", no_argument, NULL, GETOPT_VERSION_CHAR
 /* #define GETOPT_SELINUX_CONTEXT_OPTION_DECL \ */
 /*   "context", optional_argument, NULL, 'Z' */
+
+static inline void
+emit_try_help (void)
+{
+  fprintf (stderr, _("Try '%s --help' for more information.\n"), program_name);
+}
+
+
+static inline void
+emit_mandatory_arg_note (void)
+{
+  fputs (_("\n\
+Mandatory arguments to long options are mandatory for short options too.\n\
+"), stdout);
+}
+
+static inline void
+emit_ancillary_info (void)
+{
+  printf (_("\n%s online help: <%s>\n"), "GNU coreutils", "url_!!");
+  /* Don't output this redundant message for English locales.
+     Note we still output for 'C' so that it gets included in the man page.  */
+  const char *lc_messages = setlocale (LC_MESSAGES, NULL);
+  if (lc_messages && STRNCMP_LIT (lc_messages, "en_"))
+    {
+      /* TRANSLATORS: Replace LANG_CODE in this URL with your language code
+         <http://translationproject.org/team/LANG_CODE.html> to form one of
+         the URLs at http://translationproject.org/team/.  Otherwise, replace
+         the entire URL with your translation team's email address.  */
+      printf (_("Report %s translation bugs to "
+                "<http://translationproject.org/team/>\n"),
+                last_component (program_name));
+    }
+  printf (_("For complete documentation, run: "
+            "info coreutils '%s invocation'\n"), last_component (program_name));
+}
+
+
+/* These enum values cannot possibly conflict with the option values
+   ordinarily used by commands, including CHAR_MAX + 1, etc.  Avoid
+   CHAR_MIN - 1, as it may equal -1, the getopt end-of-options value.  */
+enum
+{
+  GETOPT_HELP_CHAR = (CHAR_MIN - 2),
+  GETOPT_VERSION_CHAR = (CHAR_MIN - 3)
+};
+
 /* --------------------------------- */
 
 
@@ -188,8 +239,7 @@ static struct option const longopts[] =
 
 /* Print a usage message and quit. */
 
-	void
-usage (int status)
+void usage (int status)
 {
 	if (status != EXIT_SUCCESS)
 		emit_try_help ();
