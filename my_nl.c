@@ -17,21 +17,24 @@
 /* Written by Scott Bartram (nancy!scott@uunet.uu.net)
    Revised by David MacKenzie (djm@gnu.ai.mit.edu) */
 
-#include <config.h>
+/* #include <config.h> */
 
 #include <stdio.h>
 #include <sys/types.h>
 #include <getopt.h>
 
-#include "system.h"
+#include "lib/inttypes.in.h"
+#include <inttypes.h>
+
+/* #include "system.h" */
 
 #include <regex.h>
 
-#include "error.h"
-#include "fadvise.h"
-#include "linebuffer.h"
-#include "quote.h"
-#include "xstrtol.h"
+/* #include "error.h" */
+/* #include "fadvise.h" */
+/* #include "linebuffer.h" */
+/* #include "quote.h" */
+/* #include "xstrtol.h" */
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "nl"
@@ -39,6 +42,26 @@
 #define AUTHORS \
 	proper_name ("Scott Bartram"), \
 proper_name ("David MacKenzie")
+
+/* --------------------------------- */
+
+typedef enum {false, true} bool;
+
+
+enum
+{
+  GETOPT_HELP_CHAR = (CHAR_MIN - 2),
+  GETOPT_VERSION_CHAR = (CHAR_MIN - 3)
+};
+
+#define GETOPT_HELP_OPTION_DECL \
+  "help", no_argument, NULL, GETOPT_HELP_CHAR
+#define GETOPT_VERSION_OPTION_DECL \
+  "version", no_argument, NULL, GETOPT_VERSION_CHAR
+/* #define GETOPT_SELINUX_CONTEXT_OPTION_DECL \ */
+/*   "context", optional_argument, NULL, 'Z' */
+/* --------------------------------- */
+
 
 /* Line-number formats.  They are given an int width, an intmax_t
    value, and a string separator.  */
