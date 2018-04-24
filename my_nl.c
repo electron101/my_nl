@@ -26,13 +26,15 @@
 #include "lib/inttypes.in.h"
 #include <inttypes.h>
 #include <stdlib.h>		/* для EXIT_SUCCESS и EXIT_FAILURE */
-/* #include "lib/gettext.h" */
+/* #include <gettext.h> */
 
 /* #include "system.h" */
+#include "lib/gettext.h"
 
 #include "lib/regex.h"
 
-/* #include "error.h" */
+#include <errno.h>
+/* #include <inttypes.h> */
 /* #include "fadvise.h" */
 /* #include "linebuffer.h" */
 /* #include "quote.h" */
@@ -101,6 +103,22 @@ emit_ancillary_info (void)
             "info coreutils '%s invocation'\n"), last_component (program_name));
 }
 
+/* The __attribute__ feature is available in gcc versions 2.5 and later.
+   The __-protected variants of the attributes 'format' and 'printf' are
+   accepted by gcc versions 2.6.4 (effectively 2.7) and later.
+   We enable _GL_ATTRIBUTE_FORMAT only if these are supported too, because
+   gnulib and libintl do '#define printf __printf__' when they override
+   the 'printf' function.  */
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+# define _GL_ATTRIBUTE_FORMAT(spec) __attribute__ ((__format__ spec))
+#else
+# define _GL_ATTRIBUTE_FORMAT(spec) /* empty */
+#endif
+
+extern void error (int __status, int __errnum, const char *__format, ...)
+     _GL_ATTRIBUTE_FORMAT ((__printf__, 3, 4));
+
+#define _(text) gettext (text)
 
 /* These enum values cannot possibly conflict with the option values
    ordinarily used by commands, including CHAR_MAX + 1, etc.  Avoid
@@ -111,7 +129,51 @@ enum
   GETOPT_VERSION_CHAR = (CHAR_MIN - 3)
 };
 
-/* --------------------------------- */
+#if HAVE_POSIX_FADVISE
+typedef enum {
+  FADVISE_NORMAL =     POSIX_FADV_NORMAL,
+  FADVISE_SEQUENTIAL = POSIX_FADV_SEQUENTIAL,
+  FADVISE_NOREUSE =    POSIX_FADV_NOREUSE,
+  FADVISE_DONTNEED =   POSIX_FADV_DONTNEED,
+  FADVISE_WILLNEED =   POSIX_FADV_WILLNEED,
+  FADVISE_RANDOM =     POSIX_FADV_RANDOM
+} fadvice_t;
+#else
+typedef enum {
+  FADVISE_NORMAL,
+  FADVISE_SEQUENTIAL,
+  FADVISE_NOREUSE,
+  FADVISE_DONTNEED,
+  FADVISE_WILLNEED,
+  FADVISE_RANDOM
+} fadvice_t;
+#endif
+
+/* We ignore any errors as these hints are only advisory.
+   There is the chance one can pass invalid ADVICE, which will
+   not be indicated, but given the simplicity of the interface
+   this is unlikely.  Also not returning errors allows the
+   unconditional passing of descriptors to non standard files,
+   which will just be ignored if unsupported.  */
+
+void fdadvise (int fd, off_t offset, off_t len, fadvice_t advice);
+void fadvise (FILE *fp, fadvice_t advice);
+
+/* Redirection and wildcarding when done by the utility itself.
+   Generally a noop, but used in particular for native VMS. */
+#ifndef initialize_main
+# define initialize_main(ac, av)
+#endif
+
+/* Set program_name, based on argv[0].
+   argv0 must be a string allocated with indefinite extent, and must not be
+   modified after this call.  */
+extern void set_program_name (const char *argv0);
+
+# define bindtextdomain(Domainname, Dirname) \
+    ((void) (Domainname), (const char *) (Dirname))
+
+
 
 
 /* Line-number formats.  They are given an int width, an intmax_t
