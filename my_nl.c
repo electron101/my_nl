@@ -383,35 +383,7 @@ emit_mandatory_arg_note (void)
 # define ISSLASH(C) ((C) == '/')
 # define FILE_SYSTEM_PREFIX_LEN(P) 0
 
-<<<<<<< HEAD
-	char *
-last_component (char const *name)
-{
-	char const *base = name + FILE_SYSTEM_PREFIX_LEN (name);
-	char const *p;
-	bool saw_slash = false;
-
-	while (ISSLASH (*base))
-		base++;
-
-	for (p = base; *p; p++)
-	{
-		if (ISSLASH (*p))
-			saw_slash = true;
-		else if (saw_slash)
-		{
-			base = p;
-			saw_slash = false;
-		}
-	}
-
-	return (char *) base;
-}
-
-	static inline void
-=======
-char *
-last_component (char const *name)
+void char * last_component (char const *name)
 {
   char const *base = name + FILE_SYSTEM_PREFIX_LEN (name);
   char const *p;
@@ -435,7 +407,6 @@ last_component (char const *name)
 }
 
 static inline void
->>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 emit_ancillary_info (void)
 {
 	printf (_("\n%s online help: <%s>\n"), "GNU coreutils", "url_!!");
@@ -530,7 +501,6 @@ fadvise (FILE *fp, fadvice_t advice)
 
 /* Flags for use in set_quoting_flags.  */
 enum quoting_flags
-<<<<<<< HEAD
 {
 	/* Always elide null bytes from styles that do not quote them,
 	   even when the length of the result is available to the
@@ -548,25 +518,6 @@ enum quoting_flags
 	   "\\").  */
 	QA_SPLIT_TRIGRAPHS = 0x04
 };
-=======
-  {
-    /* Always elide null bytes from styles that do not quote them,
-       even when the length of the result is available to the
-       caller.  */
-    QA_ELIDE_NULL_BYTES = 0x01,
-
-    /* Omit the surrounding quote characters if no escaped characters
-       are encountered.  Note that if no other character needs
-       escaping, then neither does the escape character.  */
-    QA_ELIDE_OUTER_QUOTES = 0x02,
-
-    /* In the c_quoting_style and c_maybe_quoting_style, split ANSI
-       trigraph sequences into concatenated strings (for example,
-       "?""?/" rather than "??/", which could be confused with
-       "\\").  */
-    QA_SPLIT_TRIGRAPHS = 0x04
-  };
->>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 
 int volatile exit_failure = EXIT_FAILURE;
 
@@ -836,37 +787,13 @@ static const char * volatile charset_aliases;
 #define LIBDIR "$(libdir)" 
 
 
-<<<<<<< HEAD
-/* int */
-/* open_safer (char const *file, int flags, ...) */
-/* { */
-/* 	mode_t mode = 0; */
-/*  */
-/* 	if (flags & O_CREAT) */
-/* 	{ */
-/* 		va_list ap; */
-/* 		va_start (ap, flags); */
-/*  */
-/* 		#<{(| We have to use PROMOTED_MODE_T instead of mode_t, otherwise GCC 4 */
-/* 		   creates crashing code when 'mode_t' is smaller than 'int'.  |)}># */
-/* 		mode = va_arg (ap, PROMOTED_MODE_T); */
-/*  */
-/* 		va_end (ap); */
-/* 	} */
-/*  */
-/* 	return fd_safer (open (file, flags, mode)); */
-/* } */
-
-/* #define open open_safer */
-/*  */
-/* #define O_RDONLY 0 */
 #define HAVE_WORKING_O_NOFOLLOW 1
-/* #define O_NOFOLLOW 0 */
+
+#define O_NOFOLLOW 0
 
 /* Return a pointer to the contents of the charset.alias file.  */
 	static const char *
 get_charset_aliases (void)
-=======
 int
 open_safer (char const *file, int flags, ...)
 {
