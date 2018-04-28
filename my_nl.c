@@ -383,6 +383,7 @@ emit_mandatory_arg_note (void)
 # define ISSLASH(C) ((C) == '/')
 # define FILE_SYSTEM_PREFIX_LEN(P) 0
 
+<<<<<<< HEAD
 	char *
 last_component (char const *name)
 {
@@ -408,6 +409,33 @@ last_component (char const *name)
 }
 
 	static inline void
+=======
+char *
+last_component (char const *name)
+{
+  char const *base = name + FILE_SYSTEM_PREFIX_LEN (name);
+  char const *p;
+  bool saw_slash = false;
+
+  while (ISSLASH (*base))
+    base++;
+
+  for (p = base; *p; p++)
+    {
+      if (ISSLASH (*p))
+        saw_slash = true;
+      else if (saw_slash)
+        {
+          base = p;
+          saw_slash = false;
+        }
+    }
+
+  return (char *) base;
+}
+
+static inline void
+>>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 emit_ancillary_info (void)
 {
 	printf (_("\n%s online help: <%s>\n"), "GNU coreutils", "url_!!");
@@ -502,6 +530,7 @@ fadvise (FILE *fp, fadvice_t advice)
 
 /* Flags for use in set_quoting_flags.  */
 enum quoting_flags
+<<<<<<< HEAD
 {
 	/* Always elide null bytes from styles that do not quote them,
 	   even when the length of the result is available to the
@@ -519,6 +548,25 @@ enum quoting_flags
 	   "\\").  */
 	QA_SPLIT_TRIGRAPHS = 0x04
 };
+=======
+  {
+    /* Always elide null bytes from styles that do not quote them,
+       even when the length of the result is available to the
+       caller.  */
+    QA_ELIDE_NULL_BYTES = 0x01,
+
+    /* Omit the surrounding quote characters if no escaped characters
+       are encountered.  Note that if no other character needs
+       escaping, then neither does the escape character.  */
+    QA_ELIDE_OUTER_QUOTES = 0x02,
+
+    /* In the c_quoting_style and c_maybe_quoting_style, split ANSI
+       trigraph sequences into concatenated strings (for example,
+       "?""?/" rather than "??/", which could be confused with
+       "\\").  */
+    QA_SPLIT_TRIGRAPHS = 0x04
+  };
+>>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 
 int volatile exit_failure = EXIT_FAILURE;
 
@@ -788,6 +836,7 @@ static const char * volatile charset_aliases;
 #define LIBDIR "$(libdir)" 
 
 
+<<<<<<< HEAD
 /* int */
 /* open_safer (char const *file, int flags, ...) */
 /* { */
@@ -817,6 +866,577 @@ static const char * volatile charset_aliases;
 /* Return a pointer to the contents of the charset.alias file.  */
 	static const char *
 get_charset_aliases (void)
+=======
+int
+open_safer (char const *file, int flags, ...)
+{
+  mode_t mode = 0;
+
+  if (flags & O_CREAT)
+    {
+      va_list ap;
+      va_start (ap, flags);
+
+      /* We have to use PROMOTED_MODE_T instead of mode_t, otherwise GCC 4
+         creates crashing code when 'mode_t' is smaller than 'int'.  */
+      mode = va_arg (ap, PROMOTED_MODE_T);
+
+      va_end (ap);
+    }
+
+  return fd_safer (open (file, flags, mode));
+}
+
+#define open open_safer
+
+#define O_RDONLY 0
+#define HAVE_WORKING_O_NOFOLLOW 0
+#define O_NOFOLLOW 0
+
+/* Return a pointer to the contents of the charset.alias file.  */
+static const char *
+get_charset_aliases (void)
+{
+  const char *cp;
+
+  cp = charset_aliases;
+  if (cp == NULL)
+    {
+#if !(defined DARWIN7 || defined VMS || defined WINDOWS_NATIVE || defined __CYGWIN__)
+      const char *dir;
+      const char *base = "charset.alias";
+      char *file_name;
+
+      /* Make it possible to override the charset.alias location.  This is
+         necessary for running the testsuite before "make install".  */
+      dir = getenv ("CHARSETALIASDIR");
+      if (dir == NULL || dir[0] == '\0')
+        dir = relocate (LIBDIR);
+
+      /* Concatenate dir and base into freshly allocated file_name.  */
+      {
+        size_t dir_len = strlen (dir);
+        size_t base_len = strlen (base);
+        int add_slash = (dir_len > 0 && !ISSLASH (dir[dir_len - 1]));
+        file_name = (char *) malloc (dir_len + add_slash + base_len + 1);
+        if (file_name != NULL)
+          {
+            memcpy (file_name, dir, dir_len);
+            if (add_slash)
+              file_name[dir_len] = DIRECTORY_SEPARATOR;
+            memcpy (file_name + dir_len + add_slash, base, base_len + 1);
+          }
+      }
+
+      if (file_name == NULL)
+        /* Out of memory.  Treat the file as empty.  */
+        cp = "";
+      else
+        {
+          int fd;
+
+          /* Open the file.  Reject symbolic links on platforms that support
+             O_NOFOLLOW.  This is a security feature.  Without it, an attacker
+             could retrieve parts of the contents (namely, the tail of the
+             first line that starts with "* ") of an arbitrary file by placing
+             a symbolic link to that file under the name "charset.alias" in
+             some writable directory and defining the environment variable
+             CHARSETALIASDIR to point to that directory.  */
+          fd = open (file_name,
+                     O_RDONLY | (HAVE_WORKING_O_NOFOLLOW ? O_NOFOLLOW : 0));
+          if (fd < 0)
+            /* File not found.  Treat it as empty.  */
+            cp = "";
+          else
+            {
+              FILE *fp;
+
+              fp = fdopen (fd, "r");
+              if (fp == NULL)
+                {
+                  /* Out of memory.  Treat the file as empty.  */
+                  close (fd);
+                  cp = "";
+                }
+              else
+                {
+                  /* Parse the file's contents.  */
+                  char *res_ptr = NULL;
+                  size_t res_size = 0;
+
+                  for (;;)
+                    {
+                      int c;
+                      char buf1[50+1];
+                      char buf2[50+1];
+                      size_t l1, l2;
+                      char *old_res_ptr;
+
+                      c = getc (fp);
+                      if (c == EOF)
+                        break;
+                      if (c == '\n' || c == ' ' || c == '\t')
+                        continue;
+                      if (c == '#')
+                        {
+                          /* Skip comment, to end of line.  */
+                          do
+                            c = getc (fp);
+                          while (!(c == EOF || c == '\n'));
+                          if (c == EOF)
+                            break;
+                          continue;
+                        }
+                      ungetc (c, fp);
+                      if (fscanf (fp, "%50s %50s", buf1, buf2) < 2)
+                        break;
+                      l1 = strlen (buf1);
+                      l2 = strlen (buf2);
+                      old_res_ptr = res_ptr;
+                      if (res_size == 0)
+                        {
+                          res_size = l1 + 1 + l2 + 1;
+                          res_ptr = (char *) malloc (res_size + 1);
+                        }
+                      else
+                        {
+                          res_size += l1 + 1 + l2 + 1;
+                          res_ptr = (char *) realloc (res_ptr, res_size + 1);
+                        }
+                      if (res_ptr == NULL)
+                        {
+                          /* Out of memory. */
+                          res_size = 0;
+                          free (old_res_ptr);
+                          break;
+                        }
+                      strcpy (res_ptr + res_size - (l2 + 1) - (l1 + 1), buf1);
+                      strcpy (res_ptr + res_size - (l2 + 1), buf2);
+                    }
+                  fclose (fp);
+                  if (res_size == 0)
+                    cp = "";
+                  else
+                    {
+                      *(res_ptr + res_size) = '\0';
+                      cp = res_ptr;
+                    }
+                }
+            }
+
+          free (file_name);
+        }
+
+#else
+
+# if defined DARWIN7
+      /* To avoid the trouble of installing a file that is shared by many
+         GNU packages -- many packaging systems have problems with this --,
+         simply inline the aliases here.  */
+      cp = "ISO8859-1" "\0" "ISO-8859-1" "\0"
+           "ISO8859-2" "\0" "ISO-8859-2" "\0"
+           "ISO8859-4" "\0" "ISO-8859-4" "\0"
+           "ISO8859-5" "\0" "ISO-8859-5" "\0"
+           "ISO8859-7" "\0" "ISO-8859-7" "\0"
+           "ISO8859-9" "\0" "ISO-8859-9" "\0"
+           "ISO8859-13" "\0" "ISO-8859-13" "\0"
+           "ISO8859-15" "\0" "ISO-8859-15" "\0"
+           "KOI8-R" "\0" "KOI8-R" "\0"
+           "KOI8-U" "\0" "KOI8-U" "\0"
+           "CP866" "\0" "CP866" "\0"
+           "CP949" "\0" "CP949" "\0"
+           "CP1131" "\0" "CP1131" "\0"
+           "CP1251" "\0" "CP1251" "\0"
+           "eucCN" "\0" "GB2312" "\0"
+           "GB2312" "\0" "GB2312" "\0"
+           "eucJP" "\0" "EUC-JP" "\0"
+           "eucKR" "\0" "EUC-KR" "\0"
+           "Big5" "\0" "BIG5" "\0"
+           "Big5HKSCS" "\0" "BIG5-HKSCS" "\0"
+           "GBK" "\0" "GBK" "\0"
+           "GB18030" "\0" "GB18030" "\0"
+           "SJIS" "\0" "SHIFT_JIS" "\0"
+           "ARMSCII-8" "\0" "ARMSCII-8" "\0"
+           "PT154" "\0" "PT154" "\0"
+         /*"ISCII-DEV" "\0" "?" "\0"*/
+           "*" "\0" "UTF-8" "\0";
+# endif
+
+# if defined VMS
+      /* To avoid the troubles of an extra file charset.alias_vms in the
+         sources of many GNU packages, simply inline the aliases here.  */
+      /* The list of encodings is taken from the OpenVMS 7.3-1 documentation
+         "Compaq C Run-Time Library Reference Manual for OpenVMS systems"
+         section 10.7 "Handling Different Character Sets".  */
+      cp = "ISO8859-1" "\0" "ISO-8859-1" "\0"
+           "ISO8859-2" "\0" "ISO-8859-2" "\0"
+           "ISO8859-5" "\0" "ISO-8859-5" "\0"
+           "ISO8859-7" "\0" "ISO-8859-7" "\0"
+           "ISO8859-8" "\0" "ISO-8859-8" "\0"
+           "ISO8859-9" "\0" "ISO-8859-9" "\0"
+           /* Japanese */
+           "eucJP" "\0" "EUC-JP" "\0"
+           "SJIS" "\0" "SHIFT_JIS" "\0"
+           "DECKANJI" "\0" "DEC-KANJI" "\0"
+           "SDECKANJI" "\0" "EUC-JP" "\0"
+           /* Chinese */
+           "eucTW" "\0" "EUC-TW" "\0"
+           "DECHANYU" "\0" "DEC-HANYU" "\0"
+           "DECHANZI" "\0" "GB2312" "\0"
+           /* Korean */
+           "DECKOREAN" "\0" "EUC-KR" "\0";
+# endif
+
+# if defined WINDOWS_NATIVE || defined __CYGWIN__
+      /* To avoid the troubles of installing a separate file in the same
+         directory as the DLL and of retrieving the DLL's directory at
+         runtime, simply inline the aliases here.  */
+
+      cp = "CP936" "\0" "GBK" "\0"
+           "CP1361" "\0" "JOHAB" "\0"
+           "CP20127" "\0" "ASCII" "\0"
+           "CP20866" "\0" "KOI8-R" "\0"
+           "CP20936" "\0" "GB2312" "\0"
+           "CP21866" "\0" "KOI8-RU" "\0"
+           "CP28591" "\0" "ISO-8859-1" "\0"
+           "CP28592" "\0" "ISO-8859-2" "\0"
+           "CP28593" "\0" "ISO-8859-3" "\0"
+           "CP28594" "\0" "ISO-8859-4" "\0"
+           "CP28595" "\0" "ISO-8859-5" "\0"
+           "CP28596" "\0" "ISO-8859-6" "\0"
+           "CP28597" "\0" "ISO-8859-7" "\0"
+           "CP28598" "\0" "ISO-8859-8" "\0"
+           "CP28599" "\0" "ISO-8859-9" "\0"
+           "CP28605" "\0" "ISO-8859-15" "\0"
+           "CP38598" "\0" "ISO-8859-8" "\0"
+           "CP51932" "\0" "EUC-JP" "\0"
+           "CP51936" "\0" "GB2312" "\0"
+           "CP51949" "\0" "EUC-KR" "\0"
+           "CP51950" "\0" "EUC-TW" "\0"
+           "CP54936" "\0" "GB18030" "\0"
+           "CP65001" "\0" "UTF-8" "\0";
+# endif
+#endif
+
+      charset_aliases = cp;
+    }
+
+  return cp;
+}
+
+
+
+/* Determine the current locale's character encoding, and canonicalize it
+   into one of the canonical names listed in config.charset.
+   The result must not be freed; it is statically allocated.
+   If the canonical name cannot be determined, the result is a non-canonical
+   name.  */
+
+#ifdef STATIC
+STATIC
+#endif
+const char *
+locale_charset (void)
+{
+  const char *codeset;
+  const char *aliases;
+
+#if !(defined WINDOWS_NATIVE || defined OS2)
+
+# if HAVE_LANGINFO_CODESET
+
+  /* Most systems support nl_langinfo (CODESET) nowadays.  */
+  codeset = nl_langinfo (CODESET);
+
+#  ifdef __CYGWIN__
+  /* Cygwin < 1.7 does not have locales.  nl_langinfo (CODESET) always
+     returns "US-ASCII".  Return the suffix of the locale name from the
+     environment variables (if present) or the codepage as a number.  */
+  if (codeset != NULL && strcmp (codeset, "US-ASCII") == 0)
+    {
+      const char *locale;
+      static char buf[2 + 10 + 1];
+
+      locale = getenv ("LC_ALL");
+      if (locale == NULL || locale[0] == '\0')
+        {
+          locale = getenv ("LC_CTYPE");
+          if (locale == NULL || locale[0] == '\0')
+            locale = getenv ("LANG");
+        }
+      if (locale != NULL && locale[0] != '\0')
+        {
+          /* If the locale name contains an encoding after the dot, return
+             it.  */
+          const char *dot = strchr (locale, '.');
+
+          if (dot != NULL)
+            {
+              const char *modifier;
+
+              dot++;
+              /* Look for the possible @... trailer and remove it, if any.  */
+              modifier = strchr (dot, '@');
+              if (modifier == NULL)
+                return dot;
+              if (modifier - dot < sizeof (buf))
+                {
+                  memcpy (buf, dot, modifier - dot);
+                  buf [modifier - dot] = '\0';
+                  return buf;
+                }
+            }
+        }
+
+      /* The Windows API has a function returning the locale's codepage as a
+         number: GetACP().  This encoding is used by Cygwin, unless the user
+         has set the environment variable CYGWIN=codepage:oem (which very few
+         people do).
+         Output directed to console windows needs to be converted (to
+         GetOEMCP() if the console is using a raster font, or to
+         GetConsoleOutputCP() if it is using a TrueType font).  Cygwin does
+         this conversion transparently (see winsup/cygwin/fhandler_console.cc),
+         converting to GetConsoleOutputCP().  This leads to correct results,
+         except when SetConsoleOutputCP has been called and a raster font is
+         in use.  */
+      sprintf (buf, "CP%u", GetACP ());
+      codeset = buf;
+    }
+#  endif
+
+# else
+
+  /* On old systems which lack it, use setlocale or getenv.  */
+  const char *locale = NULL;
+
+  /* But most old systems don't have a complete set of locales.  Some
+     (like SunOS 4 or DJGPP) have only the C locale.  Therefore we don't
+     use setlocale here; it would return "C" when it doesn't support the
+     locale name the user has set.  */
+#  if 0
+  locale = setlocale (LC_CTYPE, NULL);
+#  endif
+  if (locale == NULL || locale[0] == '\0')
+    {
+      locale = getenv ("LC_ALL");
+      if (locale == NULL || locale[0] == '\0')
+        {
+          locale = getenv ("LC_CTYPE");
+          if (locale == NULL || locale[0] == '\0')
+            locale = getenv ("LANG");
+        }
+    }
+
+  /* On some old systems, one used to set locale = "iso8859_1". On others,
+     you set it to "language_COUNTRY.charset". In any case, we resolve it
+     through the charset.alias file.  */
+  codeset = locale;
+
+# endif
+
+#elif defined WINDOWS_NATIVE
+
+  static char buf[2 + 10 + 1];
+
+  /* The Windows API has a function returning the locale's codepage as a
+     number: GetACP().
+     When the output goes to a console window, it needs to be provided in
+     GetOEMCP() encoding if the console is using a raster font, or in
+     GetConsoleOutputCP() encoding if it is using a TrueType font.
+     But in GUI programs and for output sent to files and pipes, GetACP()
+     encoding is the best bet.  */
+  sprintf (buf, "CP%u", GetACP ());
+  codeset = buf;
+
+#elif defined OS2
+
+  const char *locale;
+  static char buf[2 + 10 + 1];
+  ULONG cp[3];
+  ULONG cplen;
+
+  /* Allow user to override the codeset, as set in the operating system,
+     with standard language environment variables.  */
+  locale = getenv ("LC_ALL");
+  if (locale == NULL || locale[0] == '\0')
+    {
+      locale = getenv ("LC_CTYPE");
+      if (locale == NULL || locale[0] == '\0')
+        locale = getenv ("LANG");
+    }
+  if (locale != NULL && locale[0] != '\0')
+    {
+      /* If the locale name contains an encoding after the dot, return it.  */
+      const char *dot = strchr (locale, '.');
+
+      if (dot != NULL)
+        {
+          const char *modifier;
+
+          dot++;
+          /* Look for the possible @... trailer and remove it, if any.  */
+          modifier = strchr (dot, '@');
+          if (modifier == NULL)
+            return dot;
+          if (modifier - dot < sizeof (buf))
+            {
+              memcpy (buf, dot, modifier - dot);
+              buf [modifier - dot] = '\0';
+              return buf;
+            }
+        }
+
+      /* Resolve through the charset.alias file.  */
+      codeset = locale;
+    }
+  else
+    {
+      /* OS/2 has a function returning the locale's codepage as a number.  */
+      if (DosQueryCp (sizeof (cp), cp, &cplen))
+        codeset = "";
+      else
+        {
+          sprintf (buf, "CP%u", cp[0]);
+          codeset = buf;
+        }
+    }
+
+#endif
+
+  if (codeset == NULL)
+    /* The canonical name cannot be determined.  */
+    codeset = "";
+
+  /* Resolve alias. */
+  for (aliases = get_charset_aliases ();
+       *aliases != '\0';
+       aliases += strlen (aliases) + 1, aliases += strlen (aliases) + 1)
+    if (strcmp (codeset, aliases) == 0
+        || (aliases[0] == '*' && aliases[1] == '\0'))
+      {
+        codeset = aliases + strlen (aliases) + 1;
+        break;
+      }
+
+  /* Don't return an empty string.  GNU libc and GNU libiconv interpret
+     the empty string as denoting "the locale's character encoding",
+     thus GNU libiconv would call this function a second time.  */
+  if (codeset[0] == '\0')
+    codeset = "ASCII";
+
+#ifdef DARWIN7
+  /* Mac OS X sets MB_CUR_MAX to 1 when LC_ALL=C, and "UTF-8"
+     (the default codeset) does not work when MB_CUR_MAX is 1.  */
+  if (strcmp (codeset, "UTF-8") == 0 && MB_CUR_MAX_L (uselocale (NULL)) <= 1)
+    codeset = "ASCII";
+#endif
+
+  return codeset;
+}
+
+
+
+
+/* Help GCC to generate good code for string comparisons with
+   immediate strings. */
+#if defined (__GNUC__) && defined (__OPTIMIZE__)
+
+#define STRCASEEQ(s1,s2,s20,s21,s22,s23,s24,s25,s26,s27,s28) \
+  strcaseeq0 (s1, s2, s20, s21, s22, s23, s24, s25, s26, s27, s28)
+
+#else
+
+#define STRCASEEQ(s1,s2,s20,s21,s22,s23,s24,s25,s26,s27,s28) \
+  (c_strcasecmp (s1, s2) == 0)
+
+#endif
+
+#define c_tolower(c) \
+  ({ int __c = (c); \
+     (__c >= 'A' && __c <= 'Z' ? __c - 'A' + 'a' : __c); \
+   })
+
+int
+c_strcasecmp (const char *s1, const char *s2)
+{
+  register const unsigned char *p1 = (const unsigned char *) s1;
+  register const unsigned char *p2 = (const unsigned char *) s2;
+  unsigned char c1, c2;
+
+  if (p1 == p2)
+    return 0;
+
+  do
+    {
+      c1 = c_tolower (*p1);
+      c2 = c_tolower (*p2);
+
+      if (c1 == '\0')
+        break;
+
+      ++p1;
+      ++p2;
+    }
+  while (c1 == c2);
+
+  if (UCHAR_MAX <= INT_MAX)
+    return c1 - c2;
+  else
+    /* On machines where 'char' and 'int' are types of the same size, the
+       difference of two 'unsigned char' values - including the sign bit -
+       doesn't fit in an 'int'.  */
+    return (c1 > c2 ? 1 : c1 < c2 ? -1 : 0);
+}
+
+/* MSGID approximates a quotation mark.  Return its translation if it
+   has one; otherwise, return either it or "\"", depending on S.
+
+   S is either clocale_quoting_style or locale_quoting_style.  */
+static char const *
+gettext_quote (char const *msgid, enum quoting_style s)
+{
+  char const *translation = _(msgid);
+  char const *locale_code;
+
+  if (translation != msgid)
+    return translation;
+
+  /* For UTF-8 and GB-18030, use single quotes U+2018 and U+2019.
+     Here is a list of other locales that include U+2018 and U+2019:
+
+        ISO-8859-7   0xA1                 KOI8-T       0x91
+        CP869        0x8B                 CP874        0x91
+        CP932        0x81 0x65            CP936        0xA1 0xAE
+        CP949        0xA1 0xAE            CP950        0xA1 0xA5
+        CP1250       0x91                 CP1251       0x91
+        CP1252       0x91                 CP1253       0x91
+        CP1254       0x91                 CP1255       0x91
+        CP1256       0x91                 CP1257       0x91
+        EUC-JP       0xA1 0xC6            EUC-KR       0xA1 0xAE
+        EUC-TW       0xA1 0xE4            BIG5         0xA1 0xA5
+        BIG5-HKSCS   0xA1 0xA5            EUC-CN       0xA1 0xAE
+        GBK          0xA1 0xAE            Georgian-PS  0x91
+        PT154        0x91
+
+     None of these is still in wide use; using iconv is overkill.  */
+  locale_code = locale_charset ();
+  if (STRCASEEQ (locale_code, "UTF-8", 'U','T','F','-','8',0,0,0,0))
+    return msgid[0] == '`' ? "\xe2\x80\x98": "\xe2\x80\x99";
+  if (STRCASEEQ (locale_code, "GB18030", 'G','B','1','8','0','3','0',0,0))
+    return msgid[0] == '`' ? "\xa1\ae": "\xa1\xaf";
+
+  return (s == clocale_quoting_style ? "\"" : "'");
+}
+
+
+static size_t
+quotearg_buffer_restyled (char *buffer, size_t buffersize,
+                          char const *arg, size_t argsize,
+                          enum quoting_style quoting_style, int flags,
+                          unsigned int const *quote_these_too,
+                          char const *left_quote,
+                          char const *right_quote)
+>>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 {
 	const char *cp;
 
@@ -1825,8 +2445,13 @@ struct slotvec
 };
 
 
+<<<<<<< HEAD
 #ifndef XALLOC_INLINE
 # define XALLOC_INLINE _GL_INLINE
+=======
+#ifndef _GL_INLINE_HEADER_BEGIN
+ #error "Please include config.h first."
+>>>>>>> 4785f5b3cf5e00aa6ba8be7fd4154ba0b2bc14f9
 #endif
 
 /* Allocate N bytes of memory dynamically, with error checking.  */
