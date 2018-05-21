@@ -22,18 +22,32 @@
 
 /* Сообщение с информацией об опциях 
  */
-void usage(char *progname) 
+void usage(char *progname, int status) 
 {
-	printf("\nИспользование:\n\n");
-	printf("%s [ключ] \n\n", progname);
-	printf("Ключи:\n");
-	printf(" -k \t ключ шифровки/дешифровки\n");
-	printf(" -d \t ключ включения режима дешифровки\n");
-	printf(" -f \t файл для чтения сообщения\n");
-	printf(" -o \t файл для записи сообщения\n");
-	printf(" -e \t примеры использования программы\n");
-	printf(" -h \t вывод этого сообщения\n\n");
-	exit( EXIT_FAILURE );
+	/* Если просто ошибка печатаем команду для вывода помощи,
+	 * если введена команда вывода помощи, то печатаем все опции
+	 */
+	if (status == 0)
+	{
+		//печатаем сообщение о выводи помощи
+		printf("\n--help:\n\n");
+		exit( EXIT_FAILURE );
+	}
+
+	if (status == 1)
+	{
+		//печатаем опции
+		printf("\nИспользование:\n\n");
+		printf("%s [ключ] \n\n", progname);
+		printf("Ключи:\n");
+		printf(" -k \t ключ шифровки/дешифровки\n");
+		printf(" -d \t ключ включения режима дешифровки\n");
+		printf(" -f \t файл для чтения сообщения\n");
+		printf(" -o \t файл для записи сообщения\n");
+		printf(" -e \t примеры использования программы\n");
+		printf(" -h \t вывод этого сообщения\n\n");
+		exit( EXIT_FAILURE );
+	}
 }
 
 
@@ -55,7 +69,7 @@ static const struct option longOpts[] = {
 	{ "number-separator", required_argument, NULL, 's' },
 	{ "starting-line-number", required_argument, NULL, 'v' },
 	{ "number-width", required_argument, NULL, 'w' },
-	{ "help", required_argument, NULL, 0 },
+	{ "help", no_argument, NULL, 0 },
 	{ NULL, no_argument, NULL, 0 }
 };
 
@@ -104,9 +118,14 @@ void validate_args(int argc, char *argv[])
 				global_args.number_width = atoi(optarg);
 				break;
 				
-			case '0':	/* переход к следующему кейсу */
+			case '0':
+				if( strcmp( "help", longOpts[longIndex].name ) == 0 ) 
+					usage(argv[0], 1);
+				else
+					usage(argv[0], 0);
+				break;
 			case '?':
-				usage(argv[0]);
+				usage(argv[0], 0);
 				break;
 				
 			default:
@@ -122,9 +141,8 @@ void validate_args(int argc, char *argv[])
 
 int main( int argc, char *argv[] )
 {
-
 	if (argc < 2)			/* если ключи не заданы */
-		usage(argv[0]);
+		usage(argv[0], 0);
 
 	validate_args(argc, argv);	/* проверка входных параметров */
 	
