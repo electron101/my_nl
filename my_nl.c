@@ -51,12 +51,11 @@ struct global_args_t {
 static const char *opt_string = "i:s:v:w:?";	/* строка с опциями getopt() */
 
 static const struct option longOpts[] = {
-	{ "no-index", no_argument, NULL, 'I' },
-	{ "language", required_argument, NULL, 'l' },
-	{ "output", required_argument, NULL, 'o' },
-	{ "verbose", no_argument, NULL, 'v' },
-	{ "randomize", no_argument, NULL, 0 },
-	{ "help", no_argument, NULL, 'h' },
+	{ "line-increment", required_argument, NULL, 'i' },
+	{ "number-separator", required_argument, NULL, 's' },
+	{ "starting-line-number", required_argument, NULL, 'v' },
+	{ "number-width", required_argument, NULL, 'w' },
+	{ "help", required_argument, NULL, 0 },
 	{ NULL, no_argument, NULL, 0 }
 };
 
@@ -105,7 +104,7 @@ void validate_args(int argc, char *argv[])
 				global_args.number_width = atoi(optarg);
 				break;
 				
-			case 'h':	/* переход к следующему кейсу */
+			case '0':	/* переход к следующему кейсу */
 			case '?':
 				usage(argv[0]);
 				break;
