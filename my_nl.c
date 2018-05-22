@@ -28,26 +28,35 @@ void usage(char *progname, int status)
 	 * если введена команда вывода помощи, то печатаем все опции
 	 */
 	if (status == 0)
-	{
 		//печатаем сообщение о выводи помощи
-		printf("\n--help:\n\n");
-		exit( EXIT_FAILURE );
-	}
+		fprintf (stderr, ("По команде '%s --help'\
+ можно получить дополнительную информацию.\n"), progname);
 
 	if (status == 1)
 	{
-		//печатаем опции
-		printf("\nИспользование:\n\n");
-		printf("%s [ключ] \n\n", progname);
-		printf("Ключи:\n");
-		printf(" -k \t ключ шифровки/дешифровки\n");
-		printf(" -d \t ключ включения режима дешифровки\n");
-		printf(" -f \t файл для чтения сообщения\n");
-		printf(" -o \t файл для записи сообщения\n");
-		printf(" -e \t примеры использования программы\n");
-		printf(" -h \t вывод этого сообщения\n\n");
-		exit( EXIT_FAILURE );
+		printf("Использование: %s [КЛЮЧ]… [ФАЙЛ]…\n", progname);
+
+		fputs (("\
+Печатает каждый ФАЙЛ на стандартный вывод, добавляя номера строк.\n\
+"), stdout);
+
+		fputs (("\n\
+Аргументы, обязательные для длинных ключей, обязательны и для коротких.\n\
+  -i, --line-increment=ЧИСЛО       шаг увеличения номеров строк\n\
+  -s, --number-separator=СТРОКА    добавлять СТРОКУ после номера\n\
+  -v, --starting-line-number=ЧИСЛО первый номер строки\n\
+  -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
+                                   номеров строк\n\
+      --help     показать эту справку и выйти\n\
+"), stdout);
+		
+		fputs (("\n\
+По умолчанию используются -v1 -i1 -sTAB -w6\n\n\
+"), stdout);
+
+
 	}
+	exit( EXIT_FAILURE );
 }
 
 
@@ -118,12 +127,11 @@ void validate_args(int argc, char *argv[])
 				global_args.number_width = atoi(optarg);
 				break;
 				
-			case '0':
+			case 0:
 				if( strcmp( "help", longOpts[longIndex].name ) == 0 ) 
 					usage(argv[0], 1);
-				else
-					usage(argv[0], 0);
 				break;
+
 			case '?':
 				usage(argv[0], 0);
 				break;
