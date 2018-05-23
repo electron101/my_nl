@@ -47,6 +47,8 @@ void usage(char *progname, int status)
   -v, --starting-line-number=ЧИСЛО первый номер строки\n\
   -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
                                    номеров строк\n\
+  -a, --all-lines                  нумеровать все строки, или только\n\
+                                   не пустые\n\
       --help     показать эту справку и выйти\n\
 "), stdout);
 		
@@ -67,17 +69,19 @@ struct global_args_t {
 	char	*separator;		/* -s ключ */
 	int	start_number;		/* -v ключ */
 	int	number_width;		/* -w ключ */
+	int	all_lines;		/* -a ключ */
 	char	**inputFiles;		/* входные файлы */
 	int	numInputFiles;		/* число входных файлов */
 } global_args;
 
-static const char *opt_string = "i:s:v:w:?";	/* строка с опциями getopt() */
+static const char *opt_string = "i:s:v:w:a?";	/* строка с опциями getopt() */
 
 static const struct option longOpts[] = {
 	{ "line-increment", required_argument, NULL, 'i' },
 	{ "number-separator", required_argument, NULL, 's' },
 	{ "starting-line-number", required_argument, NULL, 'v' },
 	{ "number-width", required_argument, NULL, 'w' },
+	{ "all-lines", no_argument, NULL, 'a' },
 	{ "help", no_argument, NULL, 0 },
 	{ NULL, no_argument, NULL, 0 }
 };
@@ -90,7 +94,8 @@ void validate_args(int argc, char *argv[])
 	global_args.line_increment = 1;		/* -i ключ */
 	global_args.separator      = "TAB";	/* -s ключ */
 	global_args.start_number   = 1;		/* -v ключ */
-	global_args.number_width   = 6;		/* -f ключ */
+	global_args.number_width   = 6;		/* -w ключ */
+	global_args.all_lines      = 0;		/* -a ключ */
 	global_args.inputFiles     = NULL;	/* входные файлы */
 	global_args.numInputFiles  = 0;		/* число входных файлов */
 
@@ -126,6 +131,10 @@ void validate_args(int argc, char *argv[])
 			case 'w':
 				global_args.number_width = atoi(optarg);
 				break;
+			
+			case 'a':
+				global_args.all_lines = 1;
+				break;
 				
 			case 0:
 				if( strcmp( "help", longOpts[longIndex].name ) == 0 ) 
@@ -158,6 +167,7 @@ int main( int argc, char *argv[] )
 	printf ("s = %s\n", global_args.separator);
 	printf ("v = %d\n", global_args.start_number);
 	printf ("w = %d\n", global_args.number_width);
+	printf ("a = %d\n", global_args.all_lines);
 	
 	printf ("files = %s\n", global_args.inputFiles[0]);
 	printf ("files = %s\n", global_args.inputFiles[1]);
