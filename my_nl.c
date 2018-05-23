@@ -3,17 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
-
-
-
-/* https://www.ibm.com/developerworks/ru/library/au-unix-getopt/index.html */
-
-  /* -i, --line-increment=ЧИСЛО       шаг увеличения номеров строк */
-  /* -s, --number-separator=СТРОКА    добавлять СТРОКУ после номера */
-  /* -v, --starting-line-number=ЧИСЛО первый номер строки для каждой логической */
-  /*                                  страницы */
-  /* -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для */
-  /*                                  номеров строк */
+#include <errno.h>
 
 /* Файлы, чьи имена были дополнительно указаны в команде, 
  * будут использоваться в качестве входных файлов. 
@@ -27,8 +17,7 @@ void usage(char *progname, int status)
 	/* Если просто ошибка печатаем команду для вывода помощи,
 	 * если введена команда вывода помощи, то печатаем все опции
 	 */
-	if (status == 0)
-		//печатаем сообщение о выводи помощи
+	if (status == 0)	/* печатаем сообщение о выводи помощи */
 		fprintf (stderr, ("По команде '%s --help'\
  можно получить дополнительную информацию.\n"), progname);
 
@@ -47,8 +36,7 @@ void usage(char *progname, int status)
   -v, --starting-line-number=ЧИСЛО первый номер строки\n\
   -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
                                    номеров строк\n\
-  -a, --all-lines                  нумеровать все строки, или только\n\
-                                   не пустые\n\
+  -a, --all-lines                  нумеровать пустые строки\n\n\
       --help     показать эту справку и выйти\n\
 "), stdout);
 		
@@ -174,5 +162,34 @@ int main( int argc, char *argv[] )
 	printf ("files = %s\n", global_args.inputFiles[2]);
 	printf ("num_files = %d\n", global_args.numInputFiles);
 
+
+	FILE    *fp   = NULL;
+	char    *line = NULL;
+	size_t  len   = 0;
+	ssize_t read;
+
+
+	if ( (fp = fopen( global_args.inputFiles[0], "r" )) == NULL )
+	{
+		/* perror("fopen"); */
+		fprintf (stderr, 
+			("Ошибка открытия файла - %s\n"), strerror(errno));
+		return EXIT_FAILURE;
+	}
+
+
+	size_t i = 2;
+	while ((read = getline(&line, &len, fp)) != -1) 
+	{
+		/* printf("%s", line); */
+
+		fprintf (stdout, ("%d\t%s"), i, line);
+		i++;
+	}
+
+	fclose(fp);
+	if (line)
+		free(line);
+	
 	return EXIT_SUCCESS;
 }
