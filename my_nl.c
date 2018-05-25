@@ -185,10 +185,12 @@ int main( int argc, char *argv[] )
 	char *str_tmp;
 	
 	/* char str_f[global_args.number_width + 1];  */
+
 	char str_f[global_args.number_width]; 
 	for (j = 0; j < global_args.number_width; j++)
-		str_f[j] = '_';
-	str_f[global_args.number_width] = '\0';
+		str_f[j] = (char)32;
+	/* str_f[global_args.number_width] = '\0'; */
+
 	/* str_f[global_args.number_width + 1] = '\0'; */
 
 	while ((read = getline(&line, &len, fp)) != -1) 
@@ -201,15 +203,17 @@ int main( int argc, char *argv[] )
 		
 
 
-		str_tmp = str_f;
+		/* str_tmp = str_f; */
+                /*  */
+		/* sprintf( str_i, "%d", i); */
+		/* strcat ( str_tmp, str_i ); */
+		/* strcat ( str_tmp, line ); */
 
-		sprintf( str_i, "%d", i);
-		strcat ( str_tmp, str_i );
-
+		/* fprintf (stdout, ("%s"), str_f ); */
 		fprintf (stdout, ("%s%s"), str_tmp, line);
 		/* fprintf (stdout, ("%s"), line); */
 		i++;
-		str_tmp = NULL;
+		/* str_tmp = NULL; */
 	}
 
 	fclose(fp);
