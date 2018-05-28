@@ -182,38 +182,25 @@ int main( int argc, char *argv[] )
 	int j;
 	
 	char *str_i;
-	char *str_tmp;
 	
-	/* char str_f[global_args.number_width + 1];  */
+	char str_f[global_args.number_width + 1]; 
+	str_f[global_args.number_width] = '\0';
 
-	char str_f[global_args.number_width]; 
-	for (j = 0; j < global_args.number_width; j++)
-		str_f[j] = (char)32;
-	/* str_f[global_args.number_width] = '\0'; */
-
-	/* str_f[global_args.number_width + 1] = '\0'; */
-
-	while ((read = getline(&line, &len, fp)) != -1) 
+	while ( (read = getline(&line, &len, fp)) != -1 ) 
 	{
-		/* printf("%s", line); */
-
-		/* fprintf (stdout, ("%d\t%s"), i, line); */
-		/* strcpy( str_f, (char)global_args.line_increment); */
-		/* sprintf( str_f, "%d", i); */
+		for (j = 0; j < global_args.number_width; j++)
+			str_f[j] = (char)32;
 		
+		char str_tmp[global_args.number_width + read];
+		str_tmp[0] = '\0';
+		strcat( str_tmp, str_f );
+		/* strcat( str_tmp, line ); */
+		
+		/* fprintf (stdout, ("%s%s"), str_tmp, line ); */
+		fprintf (stdout, ("%s"), str_tmp );
+		fprintf (stdout, ("%s"), line );
 
-
-		/* str_tmp = str_f; */
-                /*  */
-		/* sprintf( str_i, "%d", i); */
-		/* strcat ( str_tmp, str_i ); */
-		/* strcat ( str_tmp, line ); */
-
-		/* fprintf (stdout, ("%s"), str_f ); */
-		fprintf (stdout, ("%s%s"), str_tmp, line);
-		/* fprintf (stdout, ("%s"), line); */
 		i++;
-		/* str_tmp = NULL; */
 	}
 
 	fclose(fp);
