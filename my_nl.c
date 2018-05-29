@@ -5,6 +5,40 @@
 #include <string.h>
 #include <errno.h>
 
+
+
+size_t count_lines(const char* filename) 
+{
+	FILE*  fp;
+	size_t cnt = 0u;
+	if((fp = fopen(filename, "r")) == NULL)
+		return 0u;
+	while( !feof(fp) && !ferror(fp) ) 
+	{
+		fscanf(fp, "%*[^\n]%*c");
+		cnt++;
+	}
+	fclose(fp);
+	return cnt;
+}
+
+
+size_t cini(int n)
+{
+	size_t count = 0u;
+	if (n / 10 == 0)
+		return 1u;
+	else 
+	{
+		while (n > 0) 
+		{
+			n = n / 10;
+			count += 1;
+		}
+		return count;
+	}     
+}
+
 /* Файлы, чьи имена были дополнительно указаны в команде, 
  * будут использоваться в качестве входных файлов. 
  */
@@ -99,8 +133,6 @@ void validate_args(int argc, char *argv[])
 	 * вернет -1, то можно считать, что обработка параметров 
 	 * выполнена и оставшиеся аргументы являются файлами ввода.
 	 */
-	/* opt = getopt_long( argc, argv, optString, longOpts, &longIndex ) */
-	/* while( (opt = getopt( argc, argv, opt_string )) != -1 ) { */
 	while( (opt = getopt_long( argc, argv, opt_string, longOpts, &longIndex )
 ) != -1 ) {
 		switch( opt ) {
@@ -167,6 +199,10 @@ int main( int argc, char *argv[] )
 	char    *line = NULL;
 	size_t  len   = 0;
 	ssize_t read;
+	size_t  count_lines_in_files = 0;
+	
+	/* count_lines_in_files += count_lines( global_args.inputFiles[0] ); */
+	count_lines_in_files += 3;
 
 
 	if ( (fp = fopen( global_args.inputFiles[0], "r" )) == NULL )
@@ -178,27 +214,55 @@ int main( int argc, char *argv[] )
 	}
 
 
-	size_t i = 2;
+
+	size_t i = global_args.start_number;
+	/* size_t i = 97; */
 	int j;
 	
-	char *str_i;
 	
-	char str_f[global_args.number_width + 1]; 
-	str_f[global_args.number_width] = '\0';
+	/* char str_f[global_args.number_width + 1];  */
+	/* str_f[global_args.number_width] = '\0'; */
+	
+
+	char *str_f;
+	/* str_f[global_args.number_width] = '\0'; */
 
 	while ( (read = getline(&line, &len, fp)) != -1 ) 
 	{
 		for (j = 0; j < global_args.number_width; j++)
 			str_f[j] = (char)32;
+
+		int    n = i;
+		size_t count_cini = cini(n);
 		
-		char str_tmp[global_args.number_width + read];
-		str_tmp[0] = '\0';
-		strcat( str_tmp, str_f );
+		if (global_args.number_width >= count_cini)
+		{
+			for (j = global_args.number_width - 1; n > 0 ; --j)
+			{
+				str_f[j] = n % 10 + '0';
+				n = n / 10;
+				str_f[global_args.number_width] = '\0';
+			}
+		}
+
+		if (global_args.number_width < count_cini)
+		{
+			char str_i[count_cini + 1];
+			sprintf(str_i, "%d", n);
+			strcpy( str_f, str_i );
+			str_f[count_cini] = '\0';
+		}
+
+		
+		/* char str_tmp[global_args.number_width + read]; */
+		/* str_tmp[0] = '\0'; */
+		/* strcat( str_tmp, str_f ); */
 		/* strcat( str_tmp, line ); */
 		
+		fprintf (stdout, ("%s\t%s"), str_f, line );
 		/* fprintf (stdout, ("%s%s"), str_tmp, line ); */
-		fprintf (stdout, ("%s"), str_tmp );
-		fprintf (stdout, ("%s"), line );
+		/* fprintf (stdout, ("%s"), str_tmp ); */
+		/* fprintf (stdout, ("%s"), line ); */
 
 		i++;
 	}
