@@ -87,13 +87,13 @@ void usage(char *progname, int status)
 /* Глобальная структура с аргументами 
  */
 struct global_args_t {
-	int	line_increment;		/* -i ключ */
-	char	*separator;		/* -s ключ */
-	int	start_number;		/* -v ключ */
-	int	number_width;		/* -w ключ */
-	int	all_lines;		/* -a ключ */
-	char	**inputFiles;		/* входные файлы */
-	int	numInputFiles;		/* число входных файлов */
+	int  line_increment;	/* -i ключ */
+	char *separator;	/* -s ключ */
+	int  start_number;	/* -v ключ */
+	int  number_width;	/* -w ключ */
+	int  all_lines;		/* -a ключ */
+	char **inputFiles;	/* входные файлы */
+	int  numInputFiles;	/* число входных файлов */
 } global_args;
 
 static const char *opt_string = "i:s:v:w:a?";	/* строка с опциями getopt() */
@@ -183,16 +183,16 @@ int main( int argc, char *argv[] )
 
 	validate_args(argc, argv);	/* проверка входных параметров */
 	
-	printf ("i = %d\n", global_args.line_increment);
-	printf ("s = %s\n", global_args.separator);
-	printf ("v = %d\n", global_args.start_number);
-	printf ("w = %d\n", global_args.number_width);
-	printf ("a = %d\n", global_args.all_lines);
-	
-	printf ("files = %s\n", global_args.inputFiles[0]);
-	printf ("files = %s\n", global_args.inputFiles[1]);
-	printf ("files = %s\n", global_args.inputFiles[2]);
-	printf ("num_files = %d\n", global_args.numInputFiles);
+	/* printf ("i = %d\n", global_args.line_increment); */
+	/* printf ("s = %s\n", global_args.separator); */
+	/* printf ("v = %d\n", global_args.start_number); */
+	/* printf ("w = %d\n", global_args.number_width); */
+	/* printf ("a = %d\n", global_args.all_lines); */
+	/*  */
+	/* printf ("files = %s\n", global_args.inputFiles[0]); */
+	/* printf ("files = %s\n", global_args.inputFiles[1]); */
+	/* printf ("files = %s\n", global_args.inputFiles[2]); */
+	/* printf ("num_files = %d\n", global_args.numInputFiles); */
 
 
 	FILE    *fp   = NULL;
@@ -202,7 +202,7 @@ int main( int argc, char *argv[] )
 	size_t  count_lines_in_files = 0;
 	
 	/* count_lines_in_files += count_lines( global_args.inputFiles[0] ); */
-	count_lines_in_files += 3;
+	/* count_lines_in_files += 3; */
 
 
 	if ( (fp = fopen( global_args.inputFiles[0], "r" )) == NULL )
@@ -216,25 +216,36 @@ int main( int argc, char *argv[] )
 
 
 	size_t i = global_args.start_number;
-	/* size_t i = 97; */
-	int j;
-	
-	
-	/* char str_f[global_args.number_width + 1];  */
-	/* str_f[global_args.number_width] = '\0'; */
-	
-
-	char *str_f;
-	/* str_f[global_args.number_width] = '\0'; */
+	int    j;
+	char   *str_f;
 
 	while ( (read = getline(&line, &len, fp)) != -1 ) 
 	{
+		/* заполним строку пробелами, в количестве
+		 * равному ключу w
+		 */
 		for (j = 0; j < global_args.number_width; j++)
 			str_f[j] = (char)32;
+		str_f[global_args.number_width] = '\0';
+		
+		/* нужно ли нумеровать пустую строку */
+		if (read <= 1)
+		{
+			if (global_args.all_lines == 0)
+			{
+				/* выводим пустую строку */
+				/* fprintf (stdout, ("\n")); */
+				fprintf (stdout, ("%s\t%s"), str_f, line );
+				continue;
+			}
+		}
 
 		int    n = i;
-		size_t count_cini = cini(n);
+		size_t count_cini = cini(n);	/* кол-во цифр в числе */
 		
+		/* если размер созданной пробельной строки больше 
+		 * или равен количеству цифр числа дла записи номера
+		 */
 		if (global_args.number_width >= count_cini)
 		{
 			for (j = global_args.number_width - 1; n > 0 ; --j)
@@ -245,6 +256,9 @@ int main( int argc, char *argv[] )
 			}
 		}
 
+		/* если количество цифр больше чем пробельная строка,
+		 * то расширим строку влево
+		 */
 		if (global_args.number_width < count_cini)
 		{
 			char str_i[count_cini + 1];
@@ -254,17 +268,11 @@ int main( int argc, char *argv[] )
 		}
 
 		
-		/* char str_tmp[global_args.number_width + read]; */
-		/* str_tmp[0] = '\0'; */
-		/* strcat( str_tmp, str_f ); */
-		/* strcat( str_tmp, line ); */
-		
+		/* вывод строки с номером и сепаратором, и строки файла */
 		fprintf (stdout, ("%s\t%s"), str_f, line );
-		/* fprintf (stdout, ("%s%s"), str_tmp, line ); */
-		/* fprintf (stdout, ("%s"), str_tmp ); */
-		/* fprintf (stdout, ("%s"), line ); */
 
-		i++;
+		/* увеличим номер строки на константу (ключ v) */
+		i += global_args.line_increment;
 	}
 
 	fclose(fp);
