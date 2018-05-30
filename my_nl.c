@@ -26,14 +26,17 @@ size_t count_lines(const char* filename)
 size_t cini(int n)
 {
 	size_t count = 0u;
+	if (n < 0)
+		count++;
+	n = abs(n);
 	if (n / 10 == 0)
-		return 1u;
+		return ++count;
 	else 
 	{
 		while (n > 0) 
 		{
 			n = n / 10;
-			count += 1;
+			count ++;
 		}
 		return count;
 	}     
@@ -215,9 +218,9 @@ int main( int argc, char *argv[] )
 
 
 
-	size_t i = global_args.start_number;
-	int    j;
-	char   *str_f;
+	int  i = global_args.start_number;
+	int  j;
+	char *str_f;
 
 	while ( (read = getline(&line, &len, fp)) != -1 ) 
 	{
@@ -231,38 +234,63 @@ int main( int argc, char *argv[] )
 		/* нужно ли нумеровать пустую строку */
 		if (read <= 1)
 		{
-			if (global_args.all_lines == 0)
+			if (global_args.all_lines == 0) /* если не нужно */
 			{
 				/* выводим пустую строку */
-				/* fprintf (stdout, ("\n")); */
 				fprintf (stdout, ("%s\t%s"), str_f, line );
 				continue;
 			}
 		}
 
-		int    n = i;
+		int    n = i;			/* номер строки */
 		size_t count_cini = cini(n);	/* кол-во цифр в числе */
+		char   str_i[count_cini + 1];	
+			
+		sprintf(str_i, "%d", n);	/* номер строки в char */
 		
 		/* если размер созданной пробельной строки больше 
-		 * или равен количеству цифр числа дла записи номера
+		 * или равен количеству цифр номера
+		 * то запишем номер в конец строки, начиная с той
+		 * позиции. Позиция считается по формуле = 
+		 * (длинна строки str_f) - (кол-во цифр номера) 
+		 *
+		 * ПРИМЕР: 
+		 * 1. длинна строки str_f - 8
+		 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
+		 * |   ||   ||   ||   ||   ||   ||   ||   | |▓▓▓
+		 * |___||___||___||___||___||___||___||___| |▓▓▓
+		 *   0    1    2    3    4    5    6    7    \0
+		 *
+		 * 2. мы хотим записать цисло -467, оно состоит из
+		 * четырёх символов (знак минус, 4, 6, 7)
+		 * 3. position = 8 - 4 = 4. 
+		 * 4. записывать будем начиная с 4 индекса куда указывает
+		 * position. записть будет идти по элементно в цикле
+		 * в итоге получим строку с текущим номером в конце
+		 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
+		 * |   ||   ||   ||   || - || 4 || 6 || 7 | |▓▓▓
+		 * |___||___||___||___||___||___||___||___| |▓▓▓
+		 *   0    1    2    3    4    5    6    7    \0
+		 *                       ^
+		 *                    position
 		 */
 		if (global_args.number_width >= count_cini)
 		{
-			for (j = global_args.number_width - 1; n > 0 ; --j)
+			size_t position = strlen(str_f) - count_cini;
+			
+			for (j = 0; j < count_cini + 1; j++)
 			{
-				str_f[j] = n % 10 + '0';
-				n = n / 10;
-				str_f[global_args.number_width] = '\0';
+				str_f[position] = str_i[j];
+				position++;
 			}
+			str_f[position] = '\0';
 		}
 
 		/* если количество цифр больше чем пробельная строка,
-		 * то расширим строку влево
+		 * то запишем число в начало строки
 		 */
 		if (global_args.number_width < count_cini)
 		{
-			char str_i[count_cini + 1];
-			sprintf(str_i, "%d", n);
 			strcpy( str_f, str_i );
 			str_f[count_cini] = '\0';
 		}
