@@ -117,7 +117,7 @@ void validate_args(int argc, char *argv[])
 	 * По умолчанию используются -v1 -i1 -sTAB -w6 
 	 */
 	global_args.line_increment = 1;		/* -i ключ */
-	global_args.separator      = "TAB";	/* -s ключ */
+	global_args.separator      = "\t";	/* -s ключ */
 	global_args.start_number   = 1;		/* -v ключ */
 	global_args.number_width   = 6;		/* -w ключ */
 	global_args.all_lines      = 0;		/* -a ключ */
@@ -136,8 +136,10 @@ void validate_args(int argc, char *argv[])
 	 * вернет -1, то можно считать, что обработка параметров 
 	 * выполнена и оставшиеся аргументы являются файлами ввода.
 	 */
-	while( (opt = getopt_long( argc, argv, opt_string, longOpts, &longIndex )
-) != -1 ) {
+	while( 
+	(opt = getopt_long( argc, argv, opt_string, longOpts, &longIndex )) 
+	!= -1 ) 
+	{
 		switch( opt ) {
 			case 'i':
 				global_args.line_increment = atoi(optarg);
@@ -160,7 +162,8 @@ void validate_args(int argc, char *argv[])
 				break;
 				
 			case 0:
-				if( strcmp( "help", longOpts[longIndex].name ) == 0 ) 
+				if( strcmp("help", 
+					longOpts[longIndex].name) == 0 ) 
 					usage(argv[0], 1);
 				break;
 
@@ -230,6 +233,7 @@ int main( int argc, char *argv[] )
 		for (j = 0; j < global_args.number_width; j++)
 			str_f[j] = (char)32;
 		str_f[global_args.number_width] = '\0';
+
 		
 		/* нужно ли нумеровать пустую строку */
 		if (read <= 1)
@@ -237,12 +241,14 @@ int main( int argc, char *argv[] )
 			if (global_args.all_lines == 0) /* если не нужно */
 			{
 				/* выводим пустую строку */
-				fprintf (stdout, ("%s\t%s"), str_f, line );
+				fprintf (stdout, ("%s\t\n"), str_f );
+				/* fputs("\n", stdout); */
+				/* fprintf (stdout, ("%s\t%s"), str_f, line ); */
 				continue;
 			}
 		}
 
-		int    n = i;			/* номер строки */
+		int    n = global_args.start_number;	/* номер строки */
 		size_t count_cini = cini(n);	/* кол-во цифр в числе */
 		char   str_i[count_cini + 1];	
 			
@@ -294,13 +300,13 @@ int main( int argc, char *argv[] )
 			strcpy( str_f, str_i );
 			str_f[count_cini] = '\0';
 		}
-
 		
 		/* вывод строки с номером и сепаратором, и строки файла */
-		fprintf (stdout, ("%s\t%s"), str_f, line );
+		fprintf (stdout, 
+			("%s%s%s"), str_f, global_args.separator, line);
 
-		/* увеличим номер строки на константу (ключ v) */
-		i += global_args.line_increment;
+		/* увеличим номер строки на шаг нумерации (ключ i) */
+		global_args.start_number += global_args.line_increment;
 	}
 
 	fclose(fp);
