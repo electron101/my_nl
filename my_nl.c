@@ -42,13 +42,33 @@ size_t cini(int n)
 	}     
 }
 
+
+int is_int(char *str)
+{
+	int n = 0;
+	int i;
+
+	for (i = 0; str[i] != 0; i++)
+	{
+		if (str[i] >= '0' && str[i] <= '9') 
+			n++; //n -увеличивается, если символ 0,1,2...9
+	}
+
+	str[i] = '\0';
+
+	if ( (str[0] == '-' && n == i - 1) || n == i ) 
+		return 1;
+
+	return 0;
+}
+
 /* Файлы, чьи имена были дополнительно указаны в команде, 
  * будут использоваться в качестве входных файлов. 
  */
 
 
 /* Сообщение с информацией об опциях 
- */
+*/
 void usage(char *progname, int status) 
 {
 	/* Если просто ошибка печатаем команду для вывода помощи,
@@ -56,30 +76,30 @@ void usage(char *progname, int status)
 	 */
 	if (status == 0)	/* печатаем сообщение о выводи помощи */
 		fprintf (stderr, ("По команде '%s --help'\
- можно получить дополнительную информацию.\n"), progname);
+					можно получить дополнительную информацию.\n"), progname);
 
 	if (status == 1)
 	{
 		printf("Использование: %s [КЛЮЧ]… [ФАЙЛ]…\n", progname);
 
 		fputs (("\
-Печатает каждый ФАЙЛ на стандартный вывод, добавляя номера строк.\n\
-"), stdout);
+					Печатает каждый ФАЙЛ на стандартный вывод, добавляя номера строк.\n\
+					"), stdout);
 
 		fputs (("\n\
-Аргументы, обязательные для длинных ключей, обязательны и для коротких.\n\
-  -i, --line-increment=ЧИСЛО       шаг увеличения номеров строк\n\
-  -s, --number-separator=СТРОКА    добавлять СТРОКУ после номера\n\
-  -v, --starting-line-number=ЧИСЛО первый номер строки\n\
-  -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
-                                   номеров строк\n\
-  -a, --all-lines                  нумеровать пустые строки\n\n\
-      --help     показать эту справку и выйти\n\
-"), stdout);
-		
+					Аргументы, обязательные для длинных ключей, обязательны и для коротких.\n\
+					-i, --line-increment=ЧИСЛО       шаг увеличения номеров строк\n\
+					-s, --number-separator=СТРОКА    добавлять СТРОКУ после номера\n\
+					-v, --starting-line-number=ЧИСЛО первый номер строки\n\
+					-w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
+					номеров строк\n\
+					-a, --all-lines                  нумеровать пустые строки\n\n\
+					--help     показать эту справку и выйти\n\
+					"), stdout);
+
 		fputs (("\n\
-По умолчанию используются -v1 -i1 -sTAB -w6\n\n\
-"), stdout);
+					По умолчанию используются -v1 -i1 -sTAB -w6\n\n\
+					"), stdout);
 
 
 	}
@@ -88,7 +108,7 @@ void usage(char *progname, int status)
 
 
 /* Глобальная структура с аргументами 
- */
+*/
 struct global_args_t {
 	int  line_increment;	/* -i ключ */
 	char *separator;	/* -s ключ */
@@ -124,11 +144,11 @@ void validate_args(int argc, char *argv[])
 	global_args.inputFiles     = NULL;	/* входные файлы */
 	global_args.numInputFiles  = 0;		/* число входных файлов */
 
-	
+
 	int opt = 0;
 	opterr	= 0;		/* отключим вывод ошибок в getopt()*/
 	int longIndex = 0;
-	
+
 	/* Обработки параметров в программе. 
 	 * Как только getopt() распознает параметр, конструкция switch 
 	 * определит, какой точно параметр был найден, и отметит 
@@ -137,40 +157,71 @@ void validate_args(int argc, char *argv[])
 	 * выполнена и оставшиеся аргументы являются файлами ввода.
 	 */
 	while( 
-	(opt = getopt_long( argc, argv, opt_string, longOpts, &longIndex )) 
-	!= -1 ) 
+			(opt = getopt_long( argc, argv, opt_string, longOpts, &longIndex )) 
+			!= -1 ) 
 	{
 		switch( opt ) {
 			case 'i':
+				/* приращение номера строки должнo быть 
+				 * целым числом и быть больше нуля
+				 */
+				if ( is_int(optarg) == 0 || atoi(optarg) <= 0 )
+				{
+					fprintf (stderr, 
+							("%s неверное приращение номера строки: «%s»\n"), 
+							argv[0], optarg);
+					usage(argv[0], 0);
+				}
 				global_args.line_increment = atoi(optarg);
 				break;
-			
+
 			case 's':
 				global_args.separator = optarg;	
 				break;
-				
+
 			case 'v':
+				/* номер начальной строки должнo быть 
+				 * целым числом 
+				 */
+				if ( is_int(optarg) == 0 )
+				{
+					fprintf (stderr, 
+							("%s неверный номер начальной строки: «%s»\n"), 
+							argv[0], optarg);
+					usage(argv[0], 0);
+				}
 				global_args.start_number = atoi(optarg);
 				break;
-			
+
 			case 'w':
+				/* шинира поля номера строки должна быть 
+				 * целым числом и быть больше нуля
+				 */
+				if ( is_int(optarg) == 0 || atoi(optarg) <= 0 )
+				{
+					fprintf (stderr, 
+							("%s неверная ширина поля для номера строки: «%s»\n"), 
+							argv[0], optarg);
+					usage(argv[0], 0);
+				}
+
 				global_args.number_width = atoi(optarg);
 				break;
-			
+
 			case 'a':
 				global_args.all_lines = 1;
 				break;
-				
+
 			case 0:
 				if( strcmp("help", 
-					longOpts[longIndex].name) == 0 ) 
+							longOpts[longIndex].name) == 0 ) 
 					usage(argv[0], 1);
 				break;
 
 			case '?':
 				usage(argv[0], 0);
 				break;
-				
+
 			default:
 				/* если не один из кейсов не сработал */
 				break;
@@ -188,7 +239,7 @@ int main( int argc, char *argv[] )
 		usage(argv[0], 0);
 
 	validate_args(argc, argv);	/* проверка входных параметров */
-	
+
 	/* printf ("i = %d\n", global_args.line_increment); */
 	/* printf ("s = %s\n", global_args.separator); */
 	/* printf ("v = %d\n", global_args.start_number); */
@@ -202,116 +253,123 @@ int main( int argc, char *argv[] )
 
 
 	FILE    *fp   = NULL;
+	/* FILE    *fp_sum   = NULL; */
 	char    *line = NULL;
 	size_t  len   = 0;
 	ssize_t read;
 	size_t  count_lines_in_files = 0;
-	
+	int  j;
+
 	/* count_lines_in_files += count_lines( global_args.inputFiles[0] ); */
 	/* count_lines_in_files += 3; */
 
 
-	if ( (fp = fopen( global_args.inputFiles[0], "r" )) == NULL )
+	for (j = 0; j < global_args.numInputFiles; j++) 
 	{
-		/* perror("fopen"); */
-		fprintf (stderr, 
-			("Ошибка открытия файла - %s\n"), strerror(errno));
-		return EXIT_FAILURE;
-	}
-
-
-
-	int  i = global_args.start_number;
-	int  j;
-	char *str_f;
-
-	while ( (read = getline(&line, &len, fp)) != -1 ) 
-	{
-		/* заполним строку пробелами, в количестве
-		 * равному ключу w
-		 */
-		for (j = 0; j < global_args.number_width; j++)
-			str_f[j] = (char)32;
-		str_f[global_args.number_width] = '\0';
-
-		
-		/* нужно ли нумеровать пустую строку */
-		if (read <= 1)
+		if ( (fp = fopen( global_args.inputFiles[j], "r" )) == NULL )
 		{
-			if (global_args.all_lines == 0) /* если не нужно */
+			/* perror("fopen"); */
+			fprintf (stderr, 
+					("Ошибка открытия файла - %s\n"), strerror(errno));
+			return EXIT_FAILURE;
+		}
+		/* fp_sum = fp; */
+		/* fprintf (fp_sum, (""), fp); */
+		/* } */
+
+
+
+		int  i = global_args.start_number;
+		char *str_f;
+
+		while ( (read = getline(&line, &len, fp)) != -1 ) 
+		{
+			/* заполним строку пробелами, в количестве
+			 * равному ключу w
+			 */
+			for (j = 0; j < global_args.number_width; j++)
+				str_f[j] = (char)32;
+			str_f[global_args.number_width] = '\0';
+
+
+			/* нужно ли нумеровать пустую строку */
+			if (read <= 1)
 			{
-				/* выводим пустую строку */
-				fprintf (stdout, ("%s\t\n"), str_f );
-				/* fputs("\n", stdout); */
-				/* fprintf (stdout, ("%s\t%s"), str_f, line ); */
-				continue;
+				if (global_args.all_lines == 0) /* если не нужно */
+				{
+					/* выводим пустую строку */
+					fprintf (stdout, ("%s\t\n"), str_f );
+					/* fputs("\n", stdout); */
+					/* fprintf (stdout, ("%s\t%s"), str_f, line ); */
+					continue;
+				}
 			}
-		}
 
-		int    n = global_args.start_number;	/* номер строки */
-		size_t count_cini = cini(n);	/* кол-во цифр в числе */
-		char   str_i[count_cini + 1];	
-			
-		sprintf(str_i, "%d", n);	/* номер строки в char */
-		
-		/* если размер созданной пробельной строки больше 
-		 * или равен количеству цифр номера
-		 * то запишем номер в конец строки, начиная с той
-		 * позиции. Позиция считается по формуле = 
-		 * (длинна строки str_f) - (кол-во цифр номера) 
-		 *
-		 * ПРИМЕР: 
-		 * 1. длинна строки str_f - 8
-		 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
-		 * |   ||   ||   ||   ||   ||   ||   ||   | |▓▓▓
-		 * |___||___||___||___||___||___||___||___| |▓▓▓
-		 *   0    1    2    3    4    5    6    7    \0
-		 *
-		 * 2. мы хотим записать цисло -467, оно состоит из
-		 * четырёх символов (знак минус, 4, 6, 7)
-		 * 3. position = 8 - 4 = 4. 
-		 * 4. записывать будем начиная с 4 индекса куда указывает
-		 * position. записть будет идти по элементно в цикле
-		 * в итоге получим строку с текущим номером в конце
-		 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
-		 * |   ||   ||   ||   || - || 4 || 6 || 7 | |▓▓▓
-		 * |___||___||___||___||___||___||___||___| |▓▓▓
-		 *   0    1    2    3    4    5    6    7    \0
-		 *                       ^
-		 *                    position
-		 */
-		if (global_args.number_width >= count_cini)
-		{
-			size_t position = strlen(str_f) - count_cini;
-			
-			for (j = 0; j < count_cini + 1; j++)
+			int    n = global_args.start_number;	/* номер строки */
+			size_t count_cini = cini(n);	/* кол-во цифр в числе */
+			char   str_i[count_cini + 1];	
+
+			sprintf(str_i, "%d", n);	/* номер строки в char */
+
+			/* если размер созданной пробельной строки больше 
+			 * или равен количеству цифр номера
+			 * то запишем номер в конец строки, начиная с той
+			 * позиции. Позиция считается по формуле = 
+			 * (длинна строки str_f) - (кол-во цифр номера) 
+			 *
+			 * ПРИМЕР: 
+			 * 1. длинна строки str_f - 8
+			 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
+			 * |   ||   ||   ||   ||   ||   ||   ||   | |▓▓▓
+			 * |___||___||___||___||___||___||___||___| |▓▓▓
+			 *   0    1    2    3    4    5    6    7    \0
+			 *
+			 * 2. мы хотим записать цисло -467, оно состоит из
+			 * четырёх символов (знак минус, 4, 6, 7)
+			 * 3. position = 8 - 4 = 4. 
+			 * 4. записывать будем начиная с 4 индекса куда указывает
+			 * position. записть будет идти по элементно в цикле
+			 * в итоге получим строку с текущим номером в конце
+			 *  ___  ___  ___  ___  ___  ___  ___  ___   ___
+			 * |   ||   ||   ||   || - || 4 || 6 || 7 | |▓▓▓
+			 * |___||___||___||___||___||___||___||___| |▓▓▓
+			 *   0    1    2    3    4    5    6    7    \0
+			 *                       ^
+			 *                    position
+			 */
+			if (global_args.number_width >= count_cini)
 			{
-				str_f[position] = str_i[j];
-				position++;
+				size_t position = strlen(str_f) - count_cini;
+
+				for (j = 0; j < count_cini + 1; j++)
+				{
+					str_f[position] = str_i[j];
+					position++;
+				}
+				str_f[position] = '\0';
 			}
-			str_f[position] = '\0';
+
+			/* если количество цифр больше чем пробельная строка,
+			 * то запишем число в начало строки
+			 */
+			if (global_args.number_width < count_cini)
+			{
+				strcpy( str_f, str_i );
+				str_f[count_cini] = '\0';
+			}
+
+			/* вывод строки с номером и сепаратором, и строки файла */
+			fprintf (stdout, 
+					("%s%s%s"), str_f, global_args.separator, line);
+
+			/* увеличим номер строки на шаг нумерации (ключ i) */
+			global_args.start_number += global_args.line_increment;
 		}
 
-		/* если количество цифр больше чем пробельная строка,
-		 * то запишем число в начало строки
-		 */
-		if (global_args.number_width < count_cini)
-		{
-			strcpy( str_f, str_i );
-			str_f[count_cini] = '\0';
-		}
-		
-		/* вывод строки с номером и сепаратором, и строки файла */
-		fprintf (stdout, 
-			("%s%s%s"), str_f, global_args.separator, line);
+		fclose(fp);
+		if (line)
+			free(line);
+}
 
-		/* увеличим номер строки на шаг нумерации (ключ i) */
-		global_args.start_number += global_args.line_increment;
-	}
-
-	fclose(fp);
-	if (line)
-		free(line);
-	
-	return EXIT_SUCCESS;
+return EXIT_SUCCESS;
 }
