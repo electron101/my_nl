@@ -1,3 +1,10 @@
+/* Это программа является учебной копией известной UNIX утилиты - nl. 
+ *
+ * Были скопированы следующие опции оригинальной nl: -i, -v, -w, -s
+ * Были добавлены собственные опции: -a
+ * 
+ * Сборка: gcc my_nl.c -o my_nl
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -6,23 +13,9 @@
 #include <errno.h>
 
 
-
-size_t count_lines(const char* filename) 
-{
-	FILE*  fp;
-	size_t cnt = 0u;
-	if((fp = fopen(filename, "r")) == NULL)
-		return 0u;
-	while( !feof(fp) && !ferror(fp) ) 
-	{
-		fscanf(fp, "%*[^\n]%*c");
-		cnt++;
-	}
-	fclose(fp);
-	return cnt;
-}
-
-
+/* возвращает количество цифр в числе, 
+ * число может быть и отрицательным 
+ */
 size_t cini(int n)
 {
 	size_t count = 0u;
@@ -43,6 +36,11 @@ size_t cini(int n)
 }
 
 
+/* проверяет является ли строка числом,
+ * число может быть и отрицательными.
+ * вернёт 1 если строка это число,
+ * вернёт 0 елси строка не число
+ */
 int is_int(char *str)
 {
 	int n = 0;
@@ -62,9 +60,6 @@ int is_int(char *str)
 	return 0;
 }
 
-/* Файлы, чьи имена были дополнительно указаны в команде, 
- * будут использоваться в качестве входных файлов. 
- */
 
 
 /* Сообщение с информацией об опциях 
@@ -76,30 +71,30 @@ void usage(char *progname, int status)
 	 */
 	if (status == 0)	/* печатаем сообщение о выводи помощи */
 		fprintf (stderr, ("По команде '%s --help'\
-					можно получить дополнительную информацию.\n"), progname);
+можно получить дополнительную информацию.\n"), progname);
 
 	if (status == 1)
 	{
 		printf("Использование: %s [КЛЮЧ]… [ФАЙЛ]…\n", progname);
 
 		fputs (("\
-					Печатает каждый ФАЙЛ на стандартный вывод, добавляя номера строк.\n\
-					"), stdout);
+Печатает каждый ФАЙЛ на стандартный вывод, добавляя номера строк.\n\
+		"), stdout);
 
 		fputs (("\n\
-					Аргументы, обязательные для длинных ключей, обязательны и для коротких.\n\
-					-i, --line-increment=ЧИСЛО       шаг увеличения номеров строк\n\
-					-s, --number-separator=СТРОКА    добавлять СТРОКУ после номера\n\
-					-v, --starting-line-number=ЧИСЛО первый номер строки\n\
-					-w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
-					номеров строк\n\
-					-a, --all-lines                  нумеровать пустые строки\n\n\
-					--help     показать эту справку и выйти\n\
-					"), stdout);
+Аргументы, обязательные для длинных ключей, обязательны и для коротких.\n\
+  -i, --line-increment=ЧИСЛО       шаг увеличения номеров строк\n\
+  -s, --number-separator=СТРОКА    добавлять СТРОКУ после номера\n\
+  -v, --starting-line-number=ЧИСЛО первый номер строки\n\
+  -w, --number-width=ЧИСЛО         использовать заданное ЧИСЛО столбцов для\n\
+                                   номеров строк\n\
+  -a, --all-lines                  нумеровать пустые строки\n\n\
+  --help     показать эту справку и выйти\n\
+		"), stdout);
 
 		fputs (("\n\
-					По умолчанию используются -v1 -i1 -sTAB -w6\n\n\
-					"), stdout);
+По умолчанию используются -v1 -i1 -sTAB -w6\n\n"), 
+				stdout);
 
 
 	}
@@ -253,35 +248,29 @@ int main( int argc, char *argv[] )
 
 
 	FILE    *fp   = NULL;
-	/* FILE    *fp_sum   = NULL; */
+	size_t  count_lines_in_files = 0;
+	int     k;
 	char    *line = NULL;
 	size_t  len   = 0;
 	ssize_t read;
-	size_t  count_lines_in_files = 0;
-	int  j;
-
-	/* count_lines_in_files += count_lines( global_args.inputFiles[0] ); */
-	/* count_lines_in_files += 3; */
+	char    *str_f;
+	int     j;
 
 
-	for (j = 0; j < global_args.numInputFiles; j++) 
+	/* цикл по всем файлам которые нужно вывести */
+	for (k = 0; k < global_args.numInputFiles; k++) 
 	{
-		if ( (fp = fopen( global_args.inputFiles[j], "r" )) == NULL )
+		/* открытие файла на чтрение */
+		if ( (fp = fopen( global_args.inputFiles[k], "r" )) == NULL )
 		{
 			/* perror("fopen"); */
 			fprintf (stderr, 
 					("Ошибка открытия файла - %s\n"), strerror(errno));
 			return EXIT_FAILURE;
 		}
-		/* fp_sum = fp; */
-		/* fprintf (fp_sum, (""), fp); */
-		/* } */
 
-
-
-		int  i = global_args.start_number;
-		char *str_f;
-
+		
+		/* читаем строку из файла */
 		while ( (read = getline(&line, &len, fp)) != -1 ) 
 		{
 			/* заполним строку пробелами, в количестве
@@ -299,8 +288,6 @@ int main( int argc, char *argv[] )
 				{
 					/* выводим пустую строку */
 					fprintf (stdout, ("%s\t\n"), str_f );
-					/* fputs("\n", stdout); */
-					/* fprintf (stdout, ("%s\t%s"), str_f, line ); */
 					continue;
 				}
 			}
@@ -359,17 +346,17 @@ int main( int argc, char *argv[] )
 			}
 
 			/* вывод строки с номером и сепаратором, и строки файла */
-			fprintf (stdout, 
-					("%s%s%s"), str_f, global_args.separator, line);
+			fprintf (stdout, ("%s%s%s"), str_f, global_args.separator, line);
 
 			/* увеличим номер строки на шаг нумерации (ключ i) */
 			global_args.start_number += global_args.line_increment;
 		}
-
-		fclose(fp);
-		if (line)
-			free(line);
 }
+
+/* Освободим память */
+fclose(fp);
+if (line)
+	free(line);
 
 return EXIT_SUCCESS;
 }
