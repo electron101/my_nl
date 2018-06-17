@@ -248,12 +248,11 @@ int main( int argc, char *argv[] )
 
 
 	FILE    *fp   = NULL;
-	size_t  count_lines_in_files = 0;
 	int     k;
 	char    *line = NULL;
 	size_t  len   = 0;
 	ssize_t read;
-	char    *str_f;
+	char    *str_f = malloc( sizeof(char) * global_args.number_width ) ;
 	int     j;
 
 
@@ -277,6 +276,7 @@ int main( int argc, char *argv[] )
 			 * равному ключу w
 			 */
 			for (j = 0; j < global_args.number_width; j++)
+				/* str_f[j] = (char)32; */
 				str_f[j] = (char)32;
 			str_f[global_args.number_width] = '\0';
 
